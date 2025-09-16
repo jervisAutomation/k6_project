@@ -21,16 +21,6 @@ GitHub Repo: [jervisAutomation/k6_project](https://github.com/jervisAutomation/k
 - JavaScript - For writing test scripts.
 - (Optional/Planned) Grafana, InfluxDB, or other monitoring tools.
 
-## 📂 Project Structure
-
-k6_project/
-├── scripts/ # Contains all k6 test scripts
-├── data/ # Test data files (if any)
-├── results/ # Test result outputs/logs
-├── utils/ # Utility/helper scripts
-└── README.md # Project documentation
-
-
 ## 🚀 Getting Started
 
 ### Prerequisites
