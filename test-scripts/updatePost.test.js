@@ -5,8 +5,8 @@ import { BASE_URL } from '../utils/config.js';
 const createPayload = JSON.parse(open('../payloads/post/updatePost.json'));
 
 export const options = {
-  vus: 5,
-  duration: '10s',
+  vus: 10,
+  duration: '20s',
 };
 
 export default function () {
@@ -15,8 +15,8 @@ export default function () {
   const res = http.get(url, { headers });
 
   check(res, {
-    'status is 201': (r) => r.status === 200,
-  //'response has id': (r) => JSON.parse(r.body).id !== undefined,
+    'status is 200': (r) => r.status === 200,
+    'check response time is less than 15 seconds': (r) => r.timings.duration < 15000
   });
 
   sleep(1);
