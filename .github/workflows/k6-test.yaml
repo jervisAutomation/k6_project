@@ -1,0 +1,29 @@
+jobs:
+  k6-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Install k6
+        run: |
+          sudo apt update
+          sudo apt install -y unzip
+          curl -s https://github.com/grafana/k6/releases/download/v0.49.0/k6-v0.49.0-linux-amd64.tar.gz | tar xvz
+          sudo cp k6-v0.49.0-linux-amd64/k6 /usr/bin/
+
+      - name: Run k6 test and save result
+        run: |
+          mkdir -p reports
+          k6 run --out json=reports/result.json test-scripts/loadtest.js
+
+      - name: Generate HTML Report
+        run: |
+          npx --yes https://github.com/benc-uk/k6-reporter reports/result.json -o reports/report.html
+
+      - name: Upload HTML Report as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: k6-html-report
+          path: reports/report.html
