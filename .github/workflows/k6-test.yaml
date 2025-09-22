@@ -34,11 +34,19 @@ jobs:
             k6 run --out json=reports/${name}.json "$script"
           done
 
+      - name: Cache npm cache
+        uses: actions/cache@v3
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-npm-cache
+          restore-keys: |
+            ${{ runner.os }}-npm-cache
+
       - name: Generate HTML Reports
         run: |
           for jsonfile in reports/*.json; do
             name=$(basename "$jsonfile" .json)
-            npx --yes k6-reporter "$jsonfile" -o reports/${name}.html
+            npx --yes github:benc-uk/k6-reporter "$jsonfile" -o reports/${name}.html
           done
 
       - name: Upload All HTML Reports
