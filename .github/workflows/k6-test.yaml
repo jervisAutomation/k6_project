@@ -1,3 +1,10 @@
+name: k6 Test
+
+on:
+  push:
+    branches:
+      - master
+
 jobs:
   k6-test:
     runs-on: ubuntu-latest
@@ -6,12 +13,15 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v3
 
-      - name: Install k6
-        run: |
-          sudo apt update
-          sudo apt install -y unzip
-          curl -s https://github.com/grafana/k6/releases/download/v0.49.0/k6-v0.49.0-linux-amd64.tar.gz | tar xvz
-          sudo cp k6-v0.49.0-linux-amd64/k6 /usr/bin/
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'   # or whichever version you want
+
+      - name: Setup k6
+        uses: grafana/setup-k6-action@v1
+        with:
+          k6-version: '0.49.0'
 
       - name: Run k6 test and save result
         run: |
@@ -20,7 +30,10 @@ jobs:
 
       - name: Generate HTML Report
         run: |
-          npx --yes https://github.com/benc-uk/k6-reporter reports/result.json -o reports/report.html
+          # Install the reporter package
+          npm install --save-dev benc-uk/k6-reporter
+          # Or use npx if no install
+          npx --yes k6-reporter reports/result.json -o reports/report.html
 
       - name: Upload HTML Report as Artifact
         uses: actions/upload-artifact@v4
