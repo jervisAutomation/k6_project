@@ -30,10 +30,6 @@ GitHub Repo: [jervisAutomation/k6_project](https://github.com/jervisAutomation/k
 
 ## 📁 Project Folder Structure
 
-K6 PERFORMANCE TESTING PROJECT
-
-## 📁 Project Folder Structure
-
 ```K6 PERFORMANCE TESTING PROJECT
 
 ├── .github
