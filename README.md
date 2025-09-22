@@ -31,6 +31,7 @@ GitHub Repo: [jervisAutomation/k6_project](https://github.com/jervisAutomation/k
 ## 📁 Project Folder Structure
 
 K6 PERFORMANCE TESTING PROJECT
+
 ├── .github
 │ └── workflows
 ├── pages
@@ -38,7 +39,7 @@ K6 PERFORMANCE TESTING PROJECT
 │ └── post
 ├── results
 ├── test-scripts
-├── utils
+└── utils
 
 
 ### Running a Test
