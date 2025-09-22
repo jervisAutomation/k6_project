@@ -1,4 +1,4 @@
-name: k6 Test
+name: Run All K6 Tests
 
 on:
   push:
@@ -16,27 +16,34 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'   # or whichever version you want
+          node-version: '18'
 
       - name: Setup k6
         uses: grafana/setup-k6-action@v1
         with:
           k6-version: '0.49.0'
 
-      - name: Run k6 test and save result
-        run: |
-          mkdir -p reports
-          k6 run --out json=reports/result.json test-scripts/loadtest.js
+      - name: Create Reports Folder
+        run: mkdir -p reports
 
-      - name: Generate HTML Report
+      - name: Run All K6 Test Scripts
         run: |
-          # Install the reporter package
+          for script in test-scripts/*.test.js; do
+            echo "Running $script"
+            name=$(basename "$script" .test.js)
+            k6 run --out json=reports/${name}.json "$script"
+          done
+
+      - name: Generate HTML Reports
+        run: |
           npm install --save-dev benc-uk/k6-reporter
-          # Or use npx if no install
-          npx --yes k6-reporter reports/result.json -o reports/report.html
+          for jsonfile in reports/*.json; do
+            name=$(basename "$jsonfile" .json)
+            npx --yes k6-reporter "$jsonfile" -o reports/${name}.html
+          done
 
-      - name: Upload HTML Report as Artifact
+      - name: Upload All HTML Reports
         uses: actions/upload-artifact@v4
         with:
-          name: k6-html-report
-          path: reports/report.html
+          name: k6-html-reports
+          path: reports/*.html

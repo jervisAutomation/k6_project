@@ -27,6 +27,20 @@ GitHub Repo: [jervisAutomation/k6_project](https://github.com/jervisAutomation/k
 
 - [Install k6](https://k6.io/docs/getting-started/installation/) on your machine.
 
+
+## 📁 Project Folder Structure
+
+K6 PERFORMANCE TESTING PROJECT
+├── .github
+│ └── workflows
+├── pages
+├── payloads
+│ └── post
+├── results
+├── test-scripts
+├── utils
+
+
 ### Running a Test
 
 ```bash
