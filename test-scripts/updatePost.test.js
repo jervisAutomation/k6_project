@@ -5,14 +5,14 @@ import { BASE_URL } from '../utils/config.js';
 const createPayload = JSON.parse(open('../payloads/post/updatePost.json'));
 
 export const options = {
-  vus: 10,
+  vus: 5,
   duration: '20s',
 };
 
 export default function () {
-  const url = `${BASE_URL}/posts`;
+  const url = `${BASE_URL}/posts/1`;
   const headers = { 'Content-Type': 'application/json' };
-  const res = http.get(url, { headers });
+  const res = http.put(url, JSON.stringify(createPayload), { headers });
 
   check(res, {
     'status is 200': (r) => r.status === 200,
