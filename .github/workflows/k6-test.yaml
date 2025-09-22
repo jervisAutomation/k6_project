@@ -34,19 +34,23 @@ jobs:
             k6 run --out json=reports/${name}.json "$script"
           done
 
-      - name: Cache npm cache
+      - name: Cache k6-reporter binary
         uses: actions/cache@v3
         with:
-          path: ~/.npm
-          key: ${{ runner.os }}-npm-cache
-          restore-keys: |
-            ${{ runner.os }}-npm-cache
+          path: ./k6-reporter
+          key: k6-reporter-binary
+
+      - name: Download k6-reporter binary (if cache missed)
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          curl -L https://github.com/benc-uk/k6-reporter/releases/latest/download/k6-reporter-linux-amd64 -o k6-reporter
+          chmod +x k6-reporter
 
       - name: Generate HTML Reports
         run: |
           for jsonfile in reports/*.json; do
             name=$(basename "$jsonfile" .json)
-            npx --yes github:benc-uk/k6-reporter "$jsonfile" -o reports/${name}.html
+            ./k6-reporter "$jsonfile" -o reports/${name}.html
           done
 
       - name: Upload All HTML Reports
