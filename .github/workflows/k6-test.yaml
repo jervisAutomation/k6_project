@@ -36,7 +36,6 @@ jobs:
 
       - name: Generate HTML Reports
         run: |
-          npm install --save-dev benc-uk/k6-reporter
           for jsonfile in reports/*.json; do
             name=$(basename "$jsonfile" .json)
             npx --yes k6-reporter "$jsonfile" -o reports/${name}.html
