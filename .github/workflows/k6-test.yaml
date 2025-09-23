@@ -39,19 +39,32 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ./k6-reporter
-          key: k6-reporter-binary
+          key: k6-reporter-linux-amd64-v2.4.0
 
       - name: Download k6-reporter binary (if cache missed)
         if: steps.cache.outputs.cache-hit != 'true'
         run: |
-          curl -sL -o k6-reporter https://github.com/benc-uk/k6-reporter/releases/latest/download/k6-reporter-linux-amd64
+          echo "Downloading k6-reporter v2.4.0 for linux amd64..."
+          curl -sL -o k6-reporter \
+            https://github.com/benc-uk/k6-reporter/releases/download/v2.4.0/k6-reporter-linux-amd64
+          # Check that file is non-zero size
+          if [ ! -s k6-reporter ]; then
+            echo "Error: Downloaded k6-reporter is empty or missing"
+            ls -la
+            cat k6-reporter | head -n 10
+            exit 1
+          fi
+          # Check file type (ELF expected)
           file k6-reporter
+          # optional: make sure it starts with ELF
+          head -n 1 k6-reporter | grep -q "ELF" || (echo "Error: File is not a Linux ELF binary" && exit 1)
           chmod +x k6-reporter
 
       - name: Generate HTML Reports
         run: |
           for jsonfile in reports/*.json; do
             name=$(basename "$jsonfile" .json)
+            echo "Generating HTML report for $jsonfile"
             ./k6-reporter "$jsonfile" -o reports/${name}.html
           done
 
