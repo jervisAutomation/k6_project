@@ -11,5 +11,8 @@
   "license": "ISC",
   "devDependencies": {
     "k6-reporter": "github:benc-uk/k6-reporter"
+  },
+  "dependencies": {
+    "chartjs-node-canvas": "^5.0.0"
   }
 }

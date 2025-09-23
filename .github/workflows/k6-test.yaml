@@ -23,19 +23,23 @@ jobs:
         with:
           k6-version: '0.49.0'
 
-      - name: Create Reports Folder
-        run: mkdir -p reports
+      - name: Install Node Dependencies
+        run: npm install
 
       - name: Run All K6 Test Scripts
         run: |
+          mkdir -p results
           for script in test-scripts/*.test.js; do
-            echo "Running $script"
             name=$(basename "$script" .test.js)
-            k6 run --env TEST_NAME=$name "$script"
+            echo "Running $name"
+            k6 run --out json=results/${name}.json "$script"
           done
 
-      - name: Upload All HTML Reports
+      - name: Generate Summary Report
+        run: node scripts/generate-summary-report.js
+
+      - name: Upload Summary HTML Report
         uses: actions/upload-artifact@v4
         with:
-          name: k6-html-reports
-          path: reports/*.html
+          name: k6-summary-report
+          path: results/summary-report.html
