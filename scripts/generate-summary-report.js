@@ -1,7 +1,5 @@
-// scripts/generate-summary-report.js
 import fs from 'fs';
 import path from 'path';
-import { ChartJSNodeCanvas } from 'chartjs-node-canvas';
 
 const summariesDir = './results';
 const reportFile = './results/summary-report.html';
@@ -23,8 +21,10 @@ for (const file of jsonFiles) {
   }
 }
 
-// Generate pie chart
+// Count pass/fail
 let pass = 0, fail = 0;
+const tableRows = [];
+
 for (const r of results) {
   const metrics = r.data?.metrics;
   const checks = metrics?.checks;
@@ -32,83 +32,99 @@ for (const r of results) {
   if (!metrics) {
     console.warn(`⚠️ Skipping ${r.name} — no metrics found (possibly failed or incomplete)`);
     fail++;
+    tableRows.push({
+      name: r.name,
+      passes: 0,
+      total: 0,
+      avg: 'N/A',
+      p95: 'N/A',
+      failed: true
+    });
     continue;
   }
 
-  if (checks?.passes === checks?.count) pass++;
+  const passes = checks?.passes ?? 0;
+  const total = checks?.count ?? 0;
+  const avg = metrics["http_req_duration"]?.values?.["avg"];
+  const p95 = metrics["http_req_duration"]?.values?.["p(95)"];
+
+  const failed = passes !== total;
+  if (!failed) pass++;
   else fail++;
+
+  tableRows.push({
+    name: r.name,
+    passes,
+    total,
+    avg: avg != null ? avg.toFixed(2) : 'N/A',
+    p95: p95 != null ? p95.toFixed(2) : 'N/A',
+    failed
+  });
 }
 
-// Generate pie chart image
-const width = 400;
-const height = 400;
-const chartJSNodeCanvas = new ChartJSNodeCanvas({ width, height });
-const pieImage = await chartJSNodeCanvas.renderToDataURL({
-  type: 'pie',
-  data: {
-    labels: ['Passed', 'Failed'],
-    datasets: [{
-      data: [pass, fail],
-      backgroundColor: ['#4CAF50', '#F44336'],
-    }]
-  }
-});
-
-// Generate HTML
-let html = `
+// Generate HTML with embedded Chart.js
+const html = `
 <!DOCTYPE html>
 <html>
 <head>
+  <meta charset="utf-8">
   <title>K6 Consolidated Report</title>
   <style>
     body { font-family: sans-serif; margin: 2rem; }
     table { border-collapse: collapse; width: 100%; margin-top: 2rem; }
     th, td { border: 1px solid #ccc; padding: 0.5rem; text-align: left; }
     th { background-color: #eee; }
+    .failed { color: red; }
+    .passed { color: green; }
   </style>
 </head>
 <body>
   <h1>K6 Test Summary Report</h1>
   <p><strong>Total Scripts:</strong> ${results.length}</p>
   <p><strong>Passed:</strong> ${pass} | <strong>Failed:</strong> ${fail}</p>
-  <img src="${pieImage}" width="${width}" height="${height}" alt="Pass/Fail Pie Chart"/>
+
+  <canvas id="pieChart" width="400" height="400"></canvas>
 
   <table>
     <thead>
       <tr>
         <th>Test Name</th>
-        <th>Checks</th>
-        <th>Avg Duration</th>
-        <th>p(95)</th>
+        <th>Checks (passed / total)</th>
+        <th>Avg Duration (ms)</th>
+        <th>p(95) (ms)</th>
         <th>Failed?</th>
       </tr>
     </thead>
     <tbody>
-`;
-
-for (const r of results) {
-  const metrics = r.data?.metrics;
-  if (!metrics) continue;
-
-  const checks = metrics.checks || {};
-  const duration = metrics["http_req_duration"]?.values?.["avg"]?.toFixed(2) ?? "N/A";
-  const p95 = metrics["http_req_duration"]?.values?.["p(95)"]?.toFixed(2) ?? "N/A";
-  const failed = checks.passes !== checks.count;
-
-  html += `
-      <tr>
-        <td>${r.name}</td>
-        <td>${checks.passes ?? 0} / ${checks.count ?? 0}</td>
-        <td>${duration} ms</td>
-        <td>${p95} ms</td>
-        <td style="color:${failed ? 'red' : 'green'}">${failed ? 'Yes' : 'No'}</td>
-      </tr>
-  `;
-}
-
-html += `
+      ${tableRows.map(r => `
+        <tr>
+          <td>${r.name}</td>
+          <td>${r.passes} / ${r.total}</td>
+          <td>${r.avg}</td>
+          <td>${r.p95}</td>
+          <td class="${r.failed ? 'failed' : 'passed'}">${r.failed ? 'Yes' : 'No'}</td>
+        </tr>
+      `).join('')}
     </tbody>
   </table>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    const ctx = document.getElementById('pieChart').getContext('2d');
+    const pieChart = new Chart(ctx, {
+      type: 'pie',
+      data: {
+        labels: ['Passed', 'Failed'],
+        datasets: [{
+          data: [${pass}, ${fail}],
+          backgroundColor: ['#4CAF50', '#F44336']
+        }]
+      },
+      options: {
+        responsive: false
+      }
+    });
+  </script>
 </body>
 </html>
 `;
