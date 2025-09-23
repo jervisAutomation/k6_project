@@ -31,37 +31,7 @@ jobs:
           for script in test-scripts/*.test.js; do
             echo "Running $script"
             name=$(basename "$script" .test.js)
-            k6 run --out json=reports/${name}.json "$script"
-          done
-
-      - name: Cache k6-reporter binary
-        id: cache
-        uses: actions/cache@v3
-        with:
-          path: ./k6-reporter
-          key: k6-reporter-linux-amd64-v1.2.1
-
-      - name: Download k6-reporter binary (if cache missed)
-        if: steps.cache.outputs.cache-hit != 'true'
-        run: |
-          echo "Downloading k6-reporter v1.2.1 (Go binary) for linux amd64..."
-          curl -sL -o k6-reporter \
-            https://github.com/benc-uk/k6-reporter/releases/download/v1.2.1/k6-reporter-linux-amd64
-          if [ ! -s k6-reporter ]; then
-            echo "Error: Download failed or file is empty"
-            ls -la k6-reporter
-            exit 1
-          fi
-          file k6-reporter
-          head -n 1 k6-reporter | grep -q "ELF" || (echo "Error: Not an ELF binary"; exit 1)
-          chmod +x k6-reporter
-
-      - name: Generate HTML Reports
-        run: |
-          for jsonfile in reports/*.json; do
-            name=$(basename "$jsonfile" .json)
-            echo "Generating HTML report for $jsonfile"
-            ./k6-reporter "$jsonfile" -o reports/${name}.html
+            k6 run --env TEST_NAME=$name "$script"
           done
 
       - name: Upload All HTML Reports

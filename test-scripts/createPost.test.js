@@ -1,6 +1,7 @@
 import http from 'k6/http';
 import { check, sleep } from 'k6';
 import { BASE_URL } from '../utils/config.js';
+import { htmlReport } from "https://raw.githubusercontent.com/benc-uk/k6-reporter/main/dist/bundle.js";
 
 const createPayload = JSON.parse(open('../payloads/post/createPost.json'));
 
@@ -20,4 +21,9 @@ export default function () {
   });
 
   sleep(1);
+}
+export function handleSummary(data) {
+  return {
+    [`reports/${__ENV.TEST_NAME || "summary"}.html`]: htmlReport(data),
+  };
 }
