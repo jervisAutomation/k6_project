@@ -39,25 +39,21 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ./k6-reporter
-          key: k6-reporter-linux-amd64-v2.4.0
+          key: k6-reporter-linux-amd64-v1.2.1
 
       - name: Download k6-reporter binary (if cache missed)
         if: steps.cache.outputs.cache-hit != 'true'
         run: |
-          echo "Downloading k6-reporter v2.4.0 for linux amd64..."
+          echo "Downloading k6-reporter v1.2.1 (Go binary) for linux amd64..."
           curl -sL -o k6-reporter \
-            https://github.com/benc-uk/k6-reporter/releases/download/v2.4.0/k6-reporter-linux-amd64
-          # Check that file is non-zero size
+            https://github.com/benc-uk/k6-reporter/releases/download/v1.2.1/k6-reporter-linux-amd64
           if [ ! -s k6-reporter ]; then
-            echo "Error: Downloaded k6-reporter is empty or missing"
-            ls -la
-            cat k6-reporter | head -n 10
+            echo "Error: Download failed or file is empty"
+            ls -la k6-reporter
             exit 1
           fi
-          # Check file type (ELF expected)
           file k6-reporter
-          # optional: make sure it starts with ELF
-          head -n 1 k6-reporter | grep -q "ELF" || (echo "Error: File is not a Linux ELF binary" && exit 1)
+          head -n 1 k6-reporter | grep -q "ELF" || (echo "Error: Not an ELF binary"; exit 1)
           chmod +x k6-reporter
 
       - name: Generate HTML Reports
