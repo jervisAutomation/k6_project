@@ -14,18 +14,32 @@ for (const file of jsonFiles) {
   const content = fs.readFileSync(path.join(summariesDir, file), 'utf-8');
   const lines = content.trim().split('\n');
   const lastLine = lines[lines.length - 1];
-  const json = JSON.parse(lastLine);
-  results.push({ name: file.replace('.json', ''), data: json });
+  let json;
+  try {
+    json = JSON.parse(lastLine);
+    results.push({ name: file.replace('.json', ''), data: json });
+  } catch (err) {
+    console.warn(`⚠️ Skipping ${file}: could not parse JSON`);
+  }
 }
 
 // Generate pie chart
 let pass = 0, fail = 0;
 for (const r of results) {
-  const checks = r.data.metrics.checks;
-  if (checks && checks.passes === checks.count) pass++;
+  const metrics = r.data?.metrics;
+  const checks = metrics?.checks;
+
+  if (!metrics) {
+    console.warn(`⚠️ Skipping ${r.name} — no metrics found (possibly failed or incomplete)`);
+    fail++;
+    continue;
+  }
+
+  if (checks?.passes === checks?.count) pass++;
   else fail++;
 }
 
+// Generate pie chart image
 const width = 400;
 const height = 400;
 const chartJSNodeCanvas = new ChartJSNodeCanvas({ width, height });
@@ -73,10 +87,14 @@ let html = `
 `;
 
 for (const r of results) {
-  const checks = r.data.metrics.checks || {};
-  const duration = r.data.metrics["http_req_duration"]?.values?.["avg"]?.toFixed(2) ?? "N/A";
-  const p95 = r.data.metrics["http_req_duration"]?.values?.["p(95)"]?.toFixed(2) ?? "N/A";
-  const failed = (checks.passes !== checks.count);
+  const metrics = r.data?.metrics;
+  if (!metrics) continue;
+
+  const checks = metrics.checks || {};
+  const duration = metrics["http_req_duration"]?.values?.["avg"]?.toFixed(2) ?? "N/A";
+  const p95 = metrics["http_req_duration"]?.values?.["p(95)"]?.toFixed(2) ?? "N/A";
+  const failed = checks.passes !== checks.count;
+
   html += `
       <tr>
         <td>${r.name}</td>
