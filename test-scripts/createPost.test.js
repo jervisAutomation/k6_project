@@ -1,8 +1,9 @@
 import http from 'k6/http';
 import { check, sleep } from 'k6';
 import { BASE_URL } from '../utils/config.js';
+import { readFileSync } from 'fs';
 
-const createPayload = JSON.parse(open('../payloads/post/createPost.json'));
+const createPayload = JSON.parse(readFileSync('../payloads/post/createPost.json', 'utf-8'));
 
 export const options = {
   vus: 5,
