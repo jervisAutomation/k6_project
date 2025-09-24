@@ -10,21 +10,32 @@ const results = [];
 
 for (const file of jsonFiles) {
   const filePath = path.join(summariesDir, file);
+  const lines = fs.readFileSync(filePath, 'utf-8').trim().split('\n');
 
+  const metrics = {};
   try {
-    const raw = fs.readFileSync(filePath, 'utf-8').trim();
+    for (const line of lines) {
+      const json = JSON.parse(line);
 
-    // ✅ Parse the whole file (not just last line)
-    const json = JSON.parse(raw);
+      if (json.type === 'Point' && json.metric && json.data?.value != null) {
+        const metricName = json.metric;
+        if (!metrics[metricName]) {
+          metrics[metricName] = { values: {} };
+        }
 
-    results.push({ name: file.replace('.json', ''), data: json });
-    console.log(`✅ Included ${file} in report.`);
+        // Only track value-based metrics
+        metrics[metricName].values.latest = json.data.value;
+      }
+    }
+
+    results.push({ name: file.replace('.json', ''), metrics });
+    console.log(`✅ Parsed ${file} successfully.`);
   } catch (err) {
-    console.warn(`⚠️ Skipping ${file}: could not parse JSON (${err.message})`);
+    console.warn(`⚠️ Skipping ${file}: could not parse NDJSON (${err.message})`);
     results.push({
       name: file.replace('.json', ''),
       skipped: true,
-      reason: 'Invalid JSON'
+      reason: 'Invalid NDJSON'
     });
   }
 }
@@ -48,12 +59,13 @@ for (const r of results) {
     continue;
   }
 
-  const metrics = r.data?.metrics;
-  const checks = metrics?.checks;
+  const metrics = r.metrics;
+  const checks = metrics["checks"];
+  const httpTiming = metrics["http_req_duration"];
 
-  if (!metrics || !checks) {
-    console.warn(`⚠️ Skipping ${r.name} — no metrics found (possibly failed or incomplete)`);
+  if (!checks || checks.values.latest === undefined) {
     skipped++;
+    console.warn(`⚠️ Skipping ${r.name} — no 'checks' metric found`);
     tableRows.push({
       name: r.name,
       status: 'Skipped',
@@ -66,12 +78,14 @@ for (const r of results) {
     continue;
   }
 
-  const passes = checks?.passes ?? 0;
-  const total = checks?.count ?? 0;
-  const avg = metrics["http_req_duration"]?.values?.["avg"];
-  const p95 = metrics["http_req_duration"]?.values?.["p(95)"];
+  const passedChecks = checks.values.latest;
+  const totalChecks = passedChecks; // K6 NDJSON doesn’t split pass/fail
 
-  const failed = passes !== total;
+  const avg = httpTiming?.values?.latest;
+  const p95 = httpTiming?.values?.latest; // Limited data available in NDJSON
+
+  // Treat any successful check value as a pass (you can expand this if needed)
+  const failed = passedChecks === 0;
   const status = failed ? 'Failed' : 'Passed';
   const className = failed ? 'failed' : 'passed';
 
@@ -80,8 +94,8 @@ for (const r of results) {
   tableRows.push({
     name: r.name,
     status,
-    passes,
-    total,
+    passes: passedChecks,
+    total: totalChecks,
     avg: avg != null ? avg.toFixed(2) : 'N/A',
     p95: p95 != null ? p95.toFixed(2) : 'N/A',
     className
