@@ -4,20 +4,23 @@ import path from 'path';
 const summariesDir = './results';
 const reportFile = './results/summary-report.html';
 
-// Read all JSON files
+// Read all JSON files in the results directory
 const jsonFiles = fs.readdirSync(summariesDir).filter(f => f.endsWith('.json'));
 const results = [];
 
 for (const file of jsonFiles) {
-  const content = fs.readFileSync(path.join(summariesDir, file), 'utf-8').trim();
-  const lines = content.split('\n');
-  const lastLine = lines[lines.length - 1];
+  const filePath = path.join(summariesDir, file);
 
   try {
-    const json = JSON.parse(lastLine);
+    const raw = fs.readFileSync(filePath, 'utf-8').trim();
+
+    // ✅ Parse the whole file (not just last line)
+    const json = JSON.parse(raw);
+
     results.push({ name: file.replace('.json', ''), data: json });
+    console.log(`✅ Included ${file} in report.`);
   } catch (err) {
-    console.warn(`⚠️ Skipping ${file}: could not parse JSON`);
+    console.warn(`⚠️ Skipping ${file}: could not parse JSON (${err.message})`);
     results.push({
       name: file.replace('.json', ''),
       skipped: true,
